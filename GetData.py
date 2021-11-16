@@ -2,7 +2,6 @@ import subprocess
 import sys
 import matplotlib.pyplot as plt
 import pandas as pd
-import datetime
 import pathlib
 import os
 
@@ -26,7 +25,7 @@ def getDataPerZip(zip):
 
     if len(regions) == 1:
         priceData = ql.get_table("ZILLOW/DATA", 
-                                indicator_id='ZSFH', 
+                                indicator_id='ZALL', 
                                 region_id=regions[0], 
                                 paginate=True)
     else:
@@ -40,12 +39,12 @@ def getDataPerZip(zip):
 
 def filterDates(df):
     df.date = pd.to_datetime(df.date, format='%Y-%m-%d')
-    df2 = df[(df.date >= '2016-01-01') & (df.date < '2020-01-01')]
+    df2 = df[(df.date >= '2010-01-01') & (df.date < '2021-11-01')]
     return df2
 
 ql.ApiConfig.api_key = "3shXhW8vy7tPPKoazXwb"
 
-df = getDataPerZip('98847')
+df = getDataPerZip('10023')
 df = filterDates(df)
 
 dirpath = str(pathlib.Path().resolve()) + "/data/"
