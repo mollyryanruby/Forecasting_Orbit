@@ -1,13 +1,16 @@
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
+import os
 
-dataPath = str(pathlib.Path().resolve()) + "/data/"
+dirPath = str(pathlib.Path().resolve())
+dataPath = dirPath + "/data/"
 modelPath = dataPath + 'model_output.csv'
 rankPath = dataPath + 'ranking.csv'
 rawPath = dataPath + 'procssed_data.csv'
 date_col = 'date'
 response_col = 'sales'
+imgPath = dirPath + "/img/"
 
 model_df = pd.read_csv(modelPath)
 rankData = pd.read_csv(rankPath)
@@ -17,7 +20,6 @@ def pivot(df):
     return pd.pivot_table(df, values='Prediction', index=['Date', 'Actual'], columns='Model').reset_index() 
 
 pivot_df = pivot(model_df)
-# rawdata.date = pd.to_datetime(rawdata.date)
 rawdata = rawdata.sort_values(by=date_col)
 # Plot the time series
 fig, ax = plt.subplots(figsize=(14,6))
@@ -33,7 +35,7 @@ for ind, label in enumerate(ax.xaxis.get_ticklabels()):
         label.set_visible(False)
 
 plt.legend()
-plt.show()
+fig.savefig(imgPath + "Forecast_Outputs.jpg")
 
 
 fig, ax = plt.subplots(figsize=(16,6))
@@ -45,4 +47,4 @@ for i, v in enumerate(rankData.MAPE):
     ax.text(v + .25, i, str(round(v,2)), 
             color =color, fontweight = 'bold')
 
-plt.show()
+fig.savefig(imgPath + "MAPE_Comparison.jpg")
