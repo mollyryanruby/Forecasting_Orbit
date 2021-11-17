@@ -31,18 +31,20 @@ from pmdarima.arima import auto_arima
 
 
 ## Instantiate Variables
-dirpath = str(pathlib.Path().resolve()) + "/data/"
-path = dirpath + 'raw.csv'
+dataPath = str(pathlib.Path().resolve()) + "/data/"
+rawDataPath = dataPath + 'train.csv.zip'
 date_col = 'date'
-response_col = 'value'
+response_col = 'sales'
 
 ## Generate Functions
-def preprocessData(df, date_col):
-    df.date = pd.to_datetime(df.date, format='%Y-%m-%d')
-    df = df.sort_values(by=date_col)
-    return df
+def preprocessData(df, date_col, response_col):
+    # Convert from daily data into monthly data
+    df[date_col] = df[date_col].apply(lambda x: str(x)[:-3])
+    df = df.groupby(date_col)[response_col].sum().reset_index()
+    df[date_col] = pd.to_datetime(df[date_col], format='%Y/%m')
+    return df.sort_values(by=date_col)
 
-def trainTestestSplit(df, test_size=24):
+def trainTestestSplit(df, test_size=12):
     train = df[:-test_size]
     test = df[-test_size:]
     return train, test
@@ -65,69 +67,69 @@ def runTheModel(df_train, df_test, model, modName, date_col, response_col):
     return prediction_df
 
 ## Load and Process Data
-df = pd.read_csv(path)
-df = preprocessData(df, date_col)
+df = pd.read_csv(rawDataPath)
+df = preprocessData(df, date_col, response_col)
 train, test = trainTestestSplit(df)
 
-# Instantiate Models
+# Instantiate model dictionary
 models = {'ETSFull': ETSFull(
                     response_col=response_col,
                     date_col=date_col,
-                    # seasonality=12,
+                    seasonality=12,
                     seed=8888
                     ),
             'DLTMAP_Linear': DLTMAP(
                     response_col=response_col,
                     date_col=date_col,
-                    # seasonality=12,
+                    seasonality=12,
                     seed=8888
                     ),
             'DLTMAP_LogLin': DLTMAP(
                             response_col=response_col,
                             date_col=date_col,
-                            # seasonality=12,
+                            seasonality=12,
                             seed=8888,
                             global_trend_option='loglinear'
                             ),
             'DLTMAP_Logistic': DLTMAP(
                                 response_col=response_col,
                                 date_col=date_col,
-                                # seasonality=12,
+                                seasonality=12,
                                 seed=8888,
                                 global_trend_option='logistic'
                                 ),
             'LGTMAP': LGTMAP(
                         response_col=response_col,
                         date_col=date_col,
-                        # seasonality=12,
-                        seed=8888,
-                        ),
+                        seasonality=12,
+                        seed=8888
+                        ), # Commented out because the results were too poor
             'LGTFull': LGTFull(
                         response_col=response_col,
                         date_col=date_col,
-                        # seasonality=12,
+                        seasonality=12,
                         seed=8888,
                     ),
             'LGTAggregation': LGTAggregated(
                                 response_col=response_col,
                                 date_col=date_col,
-                                # seasonality=12,
+                                seasonality=12,
                                 seed=8888,
                             ),
             'DLTFull': DLTFull(
                         response_col=response_col,
                         date_col=date_col,
-                        # seasonality=12,
+                        seasonality=12,
                         seed=8888,
-                        num_warmup=4000,
+                        num_warmup=5000,
                     ),
-           'ARIMA': auto_arima(train[[response_col]], 
-                                d=1,
-                                # m=12,
-                                # seasonal=True
+           'ARIMA': auto_arima(train[[response_col]],
+                                m=12,
+                                seasonal=True
                                 ) }
         
 
+# Run the models
 predictions = []
 
 for mod in models:
@@ -142,8 +144,9 @@ full_df['Rank'] = full_df.MAPE.rank(method='dense')
 ranking_df = full_df[['Model', 'Rank', 'MAPE']].drop_duplicates().sort_values(by='Rank')
 
 # Write data
-full_df.to_csv(dirpath + 'model_output.csv', index=False)
-ranking_df.to_csv(dirpath + 'ranking.csv', index=False)
+full_df.to_csv(dataPath + 'model_output.csv', index=False)
+ranking_df.to_csv(dataPath + 'ranking.csv', index=False)
+df.to_csv(dataPath + 'procssed_data.csv', index=False)
 # train.to_csv(dirpath + "train.csv", index=False)
 # test.to_csv(dirpath + 'test.csv', index=False)
 
